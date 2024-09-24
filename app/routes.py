@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, request, flash
 from app import app
-from app.forms import LoginForm  # Import your LoginForm
+from app.forms import LoginForm, SignupForm  # Import your LoginForm and SignupForm
 
 # Route for the home page
 @app.route('/')
@@ -13,7 +13,6 @@ def login():
     form = LoginForm()  # Create an instance of the LoginForm
     if request.method == 'POST' and form.validate_on_submit():
         # Here you would add logic to check username and password
-        # For example, check against a database or a predefined list
         username = form.username.data
         password = form.password.data
         # Add your authentication logic here
@@ -27,10 +26,17 @@ def login():
 # Route for the signup page
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    if request.method == 'POST':
-        # Logic for handling signup (you'll need to add this)
-        pass
-    return render_template('signup.html')
+    form = SignupForm()  # Create an instance of the SignupForm
+    if request.method == 'POST' and form.validate_on_submit():
+        # Here you can handle the signup logic, e.g., save the user to a database
+        username = form.username.data
+        password = form.password.data
+        # Add your user creation logic here (e.g., saving to a database)
+        
+        flash('Signup successful! Please login.', 'success')
+        return redirect(url_for('login'))  # Redirect to the login page after successful signup
+    
+    return render_template('signup.html', form=form)  # Pass the form to the template
 
 # Route for the services page
 @app.route('/services')
