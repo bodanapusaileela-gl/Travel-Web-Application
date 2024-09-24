@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Cheap Travel Destinations - Travel Website</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container text-center">
+        <h1 class="mt-5">Cheap Travel Destinations</h1>
+        <p>Explore affordable travel destinations around the world.</p>
+        <div class="row mt-4">
+            {% for place in places %}
+            <div class="col-md-4">
+                <h3>{{ place.name }}</h3>
+                <p>Location: {{ place.location }}</p>
+                <p>Cost: ${{ place.cost }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
