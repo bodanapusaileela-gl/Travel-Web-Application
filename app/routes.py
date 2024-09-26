@@ -1,6 +1,10 @@
-from flask import render_template, redirect, url_for, request, flash
-from app import app
-from app.forms import LoginForm, SignupForm  # Import your LoginForm and SignupForm
+from flask import render_template, redirect, url_for, request, flash, session
+from werkzeug.security import generate_password_hash
+from app import app, db
+from datetime import datetime
+from werkzeug.security import check_password_hash
+
+#from app.forms import LoginForm, SignupForm,  # Import your LoginForm and SignupForm
 
 # Route for the home page
 @app.route('/')
@@ -8,35 +12,93 @@ def home():
     return render_template('home.html')
 
 # Route for the login page
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    form = LoginForm()  # Create an instance of the LoginForm
-    if request.method == 'POST' and form.validate_on_submit():
-        # Here you would add logic to check username and password
-        username = form.username.data
-        password = form.password.data
-        # Add your authentication logic here
-        if username == 'admin' and password == 'password':  # Replace with actual authentication
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))  # Redirect to home on successful login
-        else:
-            flash('Login failed. Please check your username and password.', 'danger')
-    return render_template('login.html', form=form)  # Pass the form to the template
+    if request.method == 'POST':
+        # Get form data
+        email = request.form.get('email')
+        password = request.form.get('password')
 
+        # Find user by email
+        user = db.users.find_one({'email': email})
+
+        if user:
+            # Check if the password matches
+            if check_password_hash(user['password'], password):  # Now check_password_hash is defined
+                # Store user session
+                session['user_id'] = str(user['_id'])
+                session['username'] = user['username']
+                flash(f"Welcome back, {user['username']}!", "success")
+                return redirect(url_for('home'))
+            else:
+                flash("Invalid password", "danger")
+        else:
+            flash("Email not found", "danger")
+
+    return render_template('login.html')
+
+'''@app.route('/login', methods=['GET', 'POST'])
+#def login():
+  #  if request.method == 'POST':
+ #       # Get form data
+   #     email = request.form.get('email')
+    #    password = request.form.get('password')
+
+        # Find user by email
+     #   user = db.users.find_one({'email': email})
+
+        if user:
+            # Check if the password matches
+            if check_password_hash(user['password'], password):
+                # Store user session
+                session['user_id'] = str(user['_id'])
+                session['username'] = user['username']
+                flash(f"Welcome back, {user['username']}!", "success")
+                return redirect(url_for('home'))
+            else:
+                flash("Invalid password", "danger")
+        else:
+            flash("Email not found", "danger")
+
+    return render_template('login.html'
+    '''
 # Route for the signup page
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
-    form = SignupForm()  # Create an instance of the SignupForm
-    if request.method == 'POST' and form.validate_on_submit():
-        # Here you can handle the signup logic, e.g., save the user to a database
-        username = form.username.data
-        password = form.password.data
-        # Add your user creation logic here (e.g., saving to a database)
-        
-        flash('Signup successful! Please login.', 'success')
-        return redirect(url_for('login'))  # Redirect to the login page after successful signup
-    
-    return render_template('signup.html', form=form)  # Pass the form to the template
+    if request.method == 'POST':
+        # Get form data
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
+        # Check if password and confirm password match
+        if password != confirm_password:
+            flash("Passwords do not match", "danger")
+            return redirect(url_for('signup'))
+
+        # Check if username or email already exists
+        if db.users.find_one({'email': email}):
+            flash("Email is already registered", "danger")
+            return redirect(url_for('signup'))
+
+        # Hash the password
+        hashed_password = generate_password_hash(password)
+
+        # Insert user into MongoDB
+        user_data = {
+            'username': username,
+            'email': email,
+            'password': hashed_password,
+            'created_at': datetime.utcnow()
+        }
+        db.users.insert_one(user_data)
+
+        flash("Signup successful! You can now log in.", "success")
+        return redirect(url_for('login'))
+
+    return render_template('signup.html')
 
 # Route for the services page
 @app.route('/services')
@@ -67,4 +129,9 @@ def most_visited():
         {"name": "Tokyo", "location": "Japan", "visits": 8000}
     ]
     return render_template('most_visited.html', places=places)
-
+#Route logout
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("You have been logged out", "info")
+    return redirect(url_for('login'))

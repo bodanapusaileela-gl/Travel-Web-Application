@@ -1,0 +1,6 @@
+db.users.find().pretty()
+show db
+db.users.find().pretty()
+show collections
+use travel_db
+show dbs
