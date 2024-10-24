@@ -1,0 +1,43 @@
+stages {
+    stage('Git Clone') {
+        steps {
+            git branch: 'main', url: '<https://github.com/bodanapusaileela-gl/Travel-Web-Application.git>'
+        }
+    }
+
+    stage('Retrieve Kubernetes Secret') {
+        steps {
+            script {
+                // Retrieve the secret from Kubernetes
+                def secretValue = sh(script: "kubectl get secret my-secret -o jsonpath='{.data.my-key}' | base64 --decode", returnStdout: true).trim()
+                echo "The secret value is: ${secretValue}"
+            }
+        }
+    }
+
+    stage('Docker Login') {
+        steps {
+            withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                sh """
+                echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                """
+            }
+        }
+    }
+
+    stage('Docker Build and Push') {
+        steps {
+            script {
+                def dockerImage = 'bodanapusaileela/travel-web-application_web:latest'
+                sh "docker build -t ${dockerImage} ."
+                sh "docker push ${dockerImage}"
+            }
+        }
+    }
+
+    stage('Kubernetes Deploy') {
+        steps {
+            sh "kubectl apply -f deployment.yaml"
+        }
+    }
+}
